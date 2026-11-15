@@ -15,7 +15,7 @@ main{padding:16px;max-width:560px;margin:0 auto}
 .co{font:600 22px ui-monospace,monospace;direction:ltr}
 .acc{margin-top:6px;font-weight:700}
 .acc.good{color:var(--ok)}.acc.bad{color:var(--bad)}
-.labels{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:16px 0 10px}
+.labels{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;margin:16px 0 10px}
 .labels button,.btn{min-height:48px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 18px system-ui}
 .labels button.on{background:var(--gold);border-color:var(--gold);color:#1b1f2e}
 .btn{width:100%;background:var(--night);color:#fff;border:0;margin-top:8px}
@@ -36,7 +36,7 @@ textarea{width:100%;min-height:120px;margin-top:8px;font:14px ui-monospace,monos
   <div class="labels" id="labels"></div>
   <button class="btn" id="go">מדידה בנקודה A (20 שניות)</button>
   <div class="bar"><i id="bar"></i></div>
-  <p class="hint">עמדו במרכז הצומת, החזיקו את הטלפון פתוח ואל תזוזו עד סוף המדידה. רצוי דיוק של ±10 מ' או פחות.</p>
+  <p class="hint">עמדו במרכז הצומת או במקום המדויק של התחנה, החזיקו את הטלפון פתוח ואל תזוזו עד סוף המדידה. רצוי דיוק של ±10 מ' או פחות.</p>
   <ul id="list"></ul>
   <button class="btn ghost" id="copy">העתקת כל הנקודות</button>
   <div id="out"></div>
@@ -44,7 +44,7 @@ textarea{width:100%;min-height:120px;margin-top:8px;font:14px ui-monospace,monos
 </main>
 <script>
 {
-const $=s=>document.querySelector(s),L=['A','B','C','D','E','F'];let cur='A',last=null,samp=null,saved={};
+const $=s=>document.querySelector(s),L=['A','B','C','D','E','F','פסל','גשר','ספסל','עץ','טרקטור','דואר'];let cur='A',last=null,samp=null,saved={};
 try{saved=JSON.parse(localStorage.getItem('anchors'))||{}}catch(e){}
 const save=()=>{try{localStorage.setItem('anchors',JSON.stringify(saved))}catch(e){}};
 function drawLabels(){$('#labels').innerHTML=L.map(l=>`<button data-l="${l}" class="${l===cur?'on':''}">${l}${saved[l]?' ✓':''}</button>`).join('');$('#go').textContent=`מדידה בנקודה ${cur} (20 שניות)`}
