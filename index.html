@@ -248,6 +248,7 @@ if(DATA.map){const w=$('#world');w.style.width=W+'px';w.style.height=H+'px';$('#
 const te=new TextEncoder(), td=new TextDecoder();
 const ub=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const stLabel=s=>{const n=String(s.name||'').trim(),d='תחנה '+s.id;return(!n||n===d)?d:d+': '+n};
 async function key(secret,salt){const k=await crypto.subtle.importKey('raw',te.encode(secret),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt:ub(salt),iterations:DATA.iter,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['decrypt'])}
 async function dec(k,o){try{const p=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(o.iv)},k,ub(o.ct));return JSON.parse(td.decode(p))}catch(e){return null}}
 
@@ -273,7 +274,7 @@ function renderDraws(){
     el.className='sd '+status(s.id)+(nearNow.has(s.id)?' near':'');}
 }
 function renderPins(){
-  renderDraws();let h=DATA.stations.filter(s=>!s.layer).map(s=>{const c=status(s.id),hn=c==='locked'&&nearNow.has(s.id)?' near':'';return`<button class="pin ${c}${hn}" data-id="${s.id}" style="left:${s.x}px;top:${s.y}px" aria-label="תחנה ${s.id}, ${esc(s.name)}"><span class="w"><span class="b">${s.id}<span class="g">${GLYPH[c]}</span></span></span></button>`}).join('');
+  renderDraws();let h=DATA.stations.filter(s=>!s.layer).map(s=>{const c=status(s.id),hn=c==='locked'&&nearNow.has(s.id)?' near':'';return`<button class="pin ${c}${hn}" data-id="${s.id}" style="left:${s.x}px;top:${s.y}px" aria-label="${esc(stLabel(s))}"><span class="w"><span class="b">${s.id}<span class="g">${GLYPH[c]}</span></span></span></button>`}).join('');
   if(st.fin)h+=`<button class="pin safe${nearNow.has('safe')&&!st.safeHint?' near':''}" data-safe="1" style="left:${st.fin.x}px;top:${st.fin.y}px" aria-label="הכספת"><span class="w"><span class="b"><svg width="18" height="18" viewBox="0 0 28 28"><rect x="3" y="5" width="22" height="19" rx="3" fill="#f4b400"/><circle cx="14" cy="14.5" r="5" fill="#13235b"/><path d="M14 11v3.5l2 1.5" stroke="#f4b400" stroke-width="1.8" stroke-linecap="round"/></svg></span></span></button>`;
   $('#pins').innerHTML=h;
   $('#pn').textContent=solved()+'/'+N;
@@ -289,14 +290,14 @@ let toastT;function toast(t){const el=$('#toast');el.textContent=t;el.classList.
 
 function openStation(id){
   const s=byId(id),c=status(id),x=st.s[id];
-  if(c==='locked'){const h=s.near,u=st.near&&st.near[id];let b=`<h2>תחנה ${id}: ${esc(s.name)}</h2><p class="sub">התחנה עוד נעולה</p>`;
+  if(c==='locked'){const h=s.near,u=st.near&&st.near[id];let b=`<h2>${esc(stLabel(s))}</h2><p class="sub">התחנה עוד נעולה</p>`;
     if(h&&u)b+=`<h3 class="sec" style="margin-top:4px">רמז למציאת התג</h3>${h.img?`<img class="hintimg" src="${h.img}" alt="רמז">`:''}${h.text?`<p class="rt">${esc(h.text)}</p>`:''}`;
     else if(h)b+=`<p class="rt">התקרבו לתחנה כדי לפתוח רמז שיעזור למצוא את התג.${pos?` אתם במרחק ${fmtM(Math.hypot(pos.x-s.x,pos.y-s.y)/m2px)} ממנה.`:''}</p>`;
     b+=`<p class="rt">כשתמצאו את התג, הצמידו אליו את הטלפון והחידה תיפתח.</p><div class="acts">${DATA.demo&&h&&!u?`<button class="btn ghost" id="dnear">התקרבות מדומה</button>`:''}${DATA.demo?`<button class="btn gold" id="dscan">סריקה מדומה</button>`:''}<button class="btn ghost" data-close>הבנתי</button></div>`;
     openSheet(b);const d=$('#dscan');if(d)d.onclick=()=>collect(id,DATA.demo[id]);const dn=$('#dnear');if(dn)dn.onclick=()=>{fakeNear(id);closeSheet();toast('הדגמה: יש לכם 3 שניות ללחוץ על התחנה')};return}
   const r=R[id];if(!r){toast('טוען את החידה…');return}
   if(!x.op){x.op=Date.now();save()}
-  let body=`<h2>${esc(r.title)}</h2><p class="sub">תחנה ${id} · ${esc(s.name)}</p><p class="rt">${esc(r.text)}</p>`;
+  let body=`<h2>${esc(r.title)}</h2><p class="sub">${esc(stLabel(s))}</p><p class="rt">${esc(r.text)}</p>`;
   if(c==='solved'){body+=`<div class="msg ok">נפתרה! התשובה שלכם: ${esc(x.tries[x.tries.length-1].a)}</div>`}
   else{
     body+=`<form id="af" class="row"><input id="ai" autocomplete="off" enterkeyhint="done" placeholder="התשובה שלכם" aria-label="תשובה"><button class="btn gold" id="ab">בדיקה</button></form>`;
@@ -381,7 +382,7 @@ function adminLogin(){
 }
 function summary(){
   const end=st.end||Date.now(),L=[`אתגר במושב: סיכום משחק${st.team?' · '+st.team:''}`,`זמן משחק: ${fmtD(st.start?end-st.start:null)}`,`חידות שנפתרו: ${solved()}/${N}`,`ניקוד: ${DATA.stations.reduce((a,s)=>a+scoreOf(st.s[s.id]),0)}`];
-  DATA.stations.forEach(s=>{const x=st.s[s.id];L.push(`${s.id}. ${s.name}: ${x?(x.ok?'נפתרה ב-'+fmtD(x.ok-x.at):'נאספה'):'לא נאספה'}${x?`, טעויות ${x.tries.filter(t=>!t.ok).length}`:''}${x&&x.hint?', רמז':''}`)});
+  DATA.stations.forEach(s=>{const x=st.s[s.id];L.push(`${stLabel(s)} — ${x?(x.ok?'נפתרה ב-'+fmtD(x.ok-x.at):'נאספה'):'לא נאספה'}${x?`, טעויות ${x.tries.filter(t=>!t.ok).length}`:''}${x&&x.hint?', רמז':''}`)});
   return L.join('\n');
 }
 function adminView(){
@@ -390,7 +391,7 @@ function adminView(){
   const wrong=xs.reduce((a,x)=>a+(x?x.tries.filter(t=>!t.ok).length:0),0),hints=xs.filter(x=>x&&x.hint).length;
   const solvedT=xs.filter(x=>x&&x.ok).map(x=>x.ok-x.at),avg=solvedT.length?solvedT.reduce((a,b)=>a+b,0)/solvedT.length:null;
   const total=xs.reduce((a,x)=>a+scoreOf(x),0);
-  const rows=DATA.stations.map((s,i)=>{const x=xs[i];return`<tr><td data-l="תחנה">${s.id}. ${esc(s.name)}</td><td class="n" data-l="נאספה">${clk(x&&x.at)}</td><td class="n" data-l="זמן לפתרון">${x?(x.ok?fmtD(x.ok-x.at):'בתהליך '+fmtD(Date.now()-x.at)):'—'}</td><td class="n" data-l="טעויות">${x?x.tries.filter(t=>!t.ok).length:'—'}</td><td class="n" data-l="רמז קרבה">${clk(st.near&&st.near[s.id])}</td><td class="n" data-l="רמז">${x&&x.hint?'כן':'—'}</td><td class="n" data-l="ניקוד">${scoreOf(x)}</td></tr>`}).join('');
+  const rows=DATA.stations.map((s,i)=>{const x=xs[i];return`<tr><td data-l="תחנה">${esc(stLabel(s))}</td><td class="n" data-l="נאספה">${clk(x&&x.at)}</td><td class="n" data-l="זמן לפתרון">${x?(x.ok?fmtD(x.ok-x.at):'בתהליך '+fmtD(Date.now()-x.at)):'—'}</td><td class="n" data-l="טעויות">${x?x.tries.filter(t=>!t.ok).length:'—'}</td><td class="n" data-l="רמז קרבה">${clk(st.near&&st.near[s.id])}</td><td class="n" data-l="רמז">${x&&x.hint?'כן':'—'}</td><td class="n" data-l="ניקוד">${scoreOf(x)}</td></tr>`}).join('');
   const log=[];DATA.stations.forEach((s,i)=>{const x=xs[i];if(x)x.tries.filter(t=>!t.ok).forEach(t=>log.push({t:t.t,h:`<li>${clk(t.t)} · תחנה ${s.id}: "${esc(t.a)}"</li>`}))});
   log.sort((a,b)=>a.t-b.t);
   openSheet(`<h2>מסך מנהל המשחק</h2><p class="sub">${st.team?'קבוצה: '+esc(st.team)+' · ':''}רק למנהל. השחקנים לא רואים את הנתונים האלה.</p>
@@ -398,7 +399,7 @@ function adminView(){
   <table class="stack"><thead><tr><th>תחנה</th><th>נאספה</th><th>זמן לפתרון</th><th>טעויות</th><th>רמז קרבה</th><th>רמז</th><th>ניקוד</th></tr></thead><tbody>${rows}</tbody></table>
   <p class="hint">ניקוד לחידה: 100, פחות 15 לכל טעות, ולא פחות מ-40. רמז קרבה לא מוריד נקודות. זמן לפתרון נמדד מרגע הסריקה.</p>
   <h3 class="sec">תשובות שגויות</h3>${log.length?`<ul class="log">${log.map(l=>l.h).join('')}</ul>`:'<p class="hint">עדיין אין.</p>'}
-  ${DATA.demo?`<h3 class="sec">סריקה מדומה (רק בהדגמה)</h3><div class="demo-scan">${DATA.stations.map(s=>`<button class="btn ghost" data-scan="${s.id}">${s.id}. ${esc(s.name)}</button>`).join('')}</div>`:''}
+  ${DATA.demo?`<h3 class="sec">סריקה מדומה (רק בהדגמה)</h3><div class="demo-scan">${DATA.stations.map(s=>`<button class="btn ghost" data-scan="${s.id}">${esc(stLabel(s))}</button>`).join('')}</div>`:''}
   <div class="acts"><button class="btn" id="cp">העתקת סיכום</button><button class="btn red" id="rs">איפוס משחק</button></div><div id="cpo"></div>`);
   card.querySelectorAll('[data-scan]').forEach(b=>b.onclick=()=>{const id=+b.dataset.scan;collect(id,DATA.demo[id])});
   $('#cp').onclick=async()=>{const t=summary();try{await navigator.clipboard.writeText(t);toast('הסיכום הועתק')}catch(e){$('#cpo').innerHTML=`<textarea readonly>${esc(t)}</textarea>`}};
